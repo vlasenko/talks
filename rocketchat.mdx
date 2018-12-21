@@ -1,0 +1,43 @@
+export { default as theme } from './theme';
+
+# Rocket Chat E2E Encryption
+---
+### Rocket Chat E2E from User POV
+  - Private messages between two users can be encrypted
+  - Group chats between multiple users can be encrypted
+---
+### Rocket Chat Basic Encryption Details
+  - AES-CBC symmetric cipher with 128-bit `encKey` is used to encrypt message
+  - RSA 2048-bit keys (`rsaPrivKey`, `rsaPubKey`) generated for each user to distribute `encKey`
+  - PBKDF2 is used as KDF to derive client symmetric key `masterKey`
+---
+### Rocket Chat E2E Impl Details
+1. First derive `masterKey` from user password with PBKDF2:
+
+```jsx
+  const iterations = 1000;
+  const baseKey = await importRawKey(toArrayBuffer(password));
+  const masterKey = crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
+    baseKey,
+    { name: 'AES-CBC', length: 256 }, true, keyUsages);
+```
+---
+2. Generate RSA keys in the browser
+```jsx
+export async function generateRSAKey() {
+	return await crypto.subtle.generateKey(
+    { name: 'RSA-OAEP', modulusLength: 2048,
+    publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
+    hash: { name: 'SHA-256' } },
+    true, ['encrypt', 'decrypt']);
+}
+```
+---
+```jsx
+<CodeSnippet />
+```
+---
+# Second slide
+---
+# The end
