@@ -7,20 +7,22 @@ export { default as theme } from './theme';
   - Group chats between multiple users can be encrypted
 ---
 ### Rocket Chat Basic Encryption Details
-  - AES-CBC symmetric cipher with 128-bit `encKey` is used to encrypt message
-  - RSA 2048-bit keys (`rsaPrivKey`, `rsaPubKey`) generated for each user to distribute `encKey`
+  - AES-CBC symmetric cipher with 128-bit `roomKey` is used to encrypt message
+  - RSA 2048-bit keys (`rsaPrivKey`, `rsaPubKey`) generated for each user to distribute `roomKey`
   - PBKDF2 is used as KDF to derive client symmetric key `masterKey`
 ---
 ### Rocket Chat E2E Impl Details
 1. First derive `masterKey` from user password with PBKDF2:
 
 ```jsx
-  const iterations = 1000;
-  const baseKey = await importRawKey(toArrayBuffer(password));
-  const masterKey = crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
-    baseKey,
-    { name: 'AES-CBC', length: 256 }, true, keyUsages);
+	async getMasterKey(password) {
+    const iterations = 1000;
+    const baseKey = await importRawKey(toArrayBuffer(password));
+    const masterKey = crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
+      baseKey,
+      { name: 'AES-CBC', length: 256 }, true, keyUsages);
+  }
 ```
 ---
 2. Generate RSA keys in the browser
@@ -34,10 +36,38 @@ export async function generateRSAKey() {
 }
 ```
 ---
+3. Encrypt private RSA key with masterKey derived from password
 ```jsx
-<CodeSnippet />
+async encodePrivateKey(private_key, password) {
+  const masterKey = await this.getMasterKey(password);
+
+  const vector = crypto.getRandomValues(new Uint8Array(16));
+  const encodedPrivateKey = await encryptAES(vector,
+    masterKey, toArrayBuffer(private_key)
+  );
+  ...
+}
 ```
 ---
-# Second slide
+4. Generate `roomKey` for the room
+```jsx
+async createGroupKey() {
+  const key = await generateAESKey();
+  this.groupSessionKey = key;
+  await this.encryptKeyForOtherParticipants();
+}
+```
+---
+5. Encrypt generated `roomKey` for each participant
+```jsx
+async encryptForParticipand(user) {
+  const userKey = await importRSAKey(
+    JSON.parse(user.e2e.public_key), ['encrypt']);
+
+  // Encrypt session key for this user with his/her public key
+  const encryptedUserKey = await encryptRSA(userKey,
+    toArrayBuffer(this.sessionKeyExportedString));
+}
+```
 ---
 # The end
