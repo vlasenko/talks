@@ -4,7 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start": "mdx-deck rocketchat.mdx"
+    "start": "mdx-deck react-hooks.mdx"
   },
   "devDependencies": {
     "mdx-deck": "^3.0.7"

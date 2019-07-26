@@ -1,0 +1,186 @@
+import themeList from './themes';
+export const themes = themeList;
+
+# React Evolution and
+# React Hooks
+---
+# Basic React Element
+
+```jsx
+// Element code:
+const Header = () => <h1>My header</h1>
+
+// Element rendering to HTML:
+ReactDOM.render(Header,
+  document.getElementById('id')
+);
+```
+---
+### JSX tranpilation to plain JS
+```jsx
+// JSX
+ReactDOM.render(
+  <div id="test">
+    <h1>A title</h1>
+    <p>A paragraph</p>
+  </div>,
+  document.getElementById('myapp')
+)
+
+// Plain JS:
+ReactDOM.render(
+  React.createElement('div', { id: 'test' },
+    React.createElement('h1', null, 'A title'),
+    React.createElement('p', null, 'A paragraph')
+  ),
+  document.getElementById('myapp')
+)
+```
+---
+### React Props top down flow
+```jsx
+const Welcome = (props) => (<h1>Hello, {props.name}</h1>);
+
+const App = (props) => (
+  <section>
+    <Welcome name={props.firstName} />
+    <Welcome name={props.secondName} />
+  </section>);
+
+ReactDOM.render(
+  <App firstName="Sara" secondName="Bob"/>,
+  document.getElementById('root')
+);
+```
+Important. Props are read-only!
+
+---
+Slight complication - React Class Components for State
+
+```jsx
+class Clock extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { date: new Date() };
+  }
+
+  render() {
+    return (
+      <div>
+        <h1>Hello, world!</h1>
+        <h2>It is {this.state.date.toLocaleTimeString()}.</h2>
+      </div>
+    );
+  }
+}
+```
+---
+Heavy complication - Higher order Components
+```jsx
+const withJoke = WrappedComponent =>
+  class extends React.Component {
+    constructor() {
+      super();
+      this.state = { joke: "Loading…" };
+    }
+    componentDidMount() {
+      fetch("https://api.icndb.com/jokes/random")
+        .then(joke => this.setState({ joke: response.json().value.joke }))
+        .catch(() => this.setState({ joke: "Error" }));
+    }
+    render() {
+      return <WrappedComponent joke={this.state.joke} {...this.props} />;
+    }
+  };
+const Content = ({ joke }) => (
+  <article>
+    <h1>Joke: {joke}</h1>
+  </article>
+);
+const ContentWithJoke = withJoke(Content);
+```
+---
+Composing higher order Components
+```jsx
+const Foo = ({ result }) => <ResultComponent result={result} />;
+const withRequest = BaseComponent => ({ bar, ...props }) => {
+  const { result, loading, error } = useRequest(bar);
+  return (
+    <BaseComponent {...props} result={result} loading={loading} error={error} />
+  );
+};
+const withError = branch(({ error }) => error, ErrorComponent);
+const withLoading = branch(({ loading }) => loading, LoadingComponent);
+export default compose(withRequest, withLoading, withError)(Foo);
+// Is equivalent to:
+export default withRequest(withLoading(withError(Foo)));
+```
+---
+Render Props - easier way to compose
+```jsx
+class Joke extends React.Component {
+  constructor() {
+    super();
+    this.state = { joke: "Loading…" };
+  }
+  componentDidMount() {
+    fetch("https://api.icndb.com/jokes/random")
+      .then(joke => this.setState({ joke: response.json().value.joke }))
+      .catch(() => this.setState({ joke: "Error" }));
+  }
+  render() {
+    return this.props.render(this.state.joke);
+  }
+};
+const ContentWithJoke = () => (
+  <article>
+    <Joke render={(joke) => (<h1>Joke: {joke}</h1>)} />
+  </article>
+);
+```
+---
+React Hooks - the new and (almost) only way to React
+```jsx
+const Joke = () => {
+  const [joke, setJoke] = useState('Loading');
+
+  useEffect(() => {
+    fetch("https://api.icndb.com/jokes/random")
+      .then(joke => setJoke(response.json().value.joke))
+      .catch(() => this.setJoke('Error'));
+  }, []);
+
+  return (
+    <article>
+      <h1>Joke: {joke}</h1>
+    </article>
+  );
+};
+```
+---
+Composing with React Hooks
+```jsx
+const getJoke = () => {
+  const [joke, setJoke] = useState('Loading');
+
+  useEffect(() => {
+    fetch("https://api.icndb.com/jokes/random")
+      .then(joke => setJoke(response.json().value.joke))
+      .catch(() => this.setJoke('Error'));
+  }, []);
+
+  return joke;
+};
+
+const Joke = () => (
+  <article>
+    <h1>Joke: {getJoke()}</h1>
+  </article>
+)
+```
+---
+# The end
+My talks source code is available at:
+
+https://github.com/vlasenko/talks
+# Thank you!
